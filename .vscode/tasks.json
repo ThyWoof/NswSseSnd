@@ -1,0 +1,31 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "msvc build",
+            "type": "shell",
+            "command": "cl.exe",
+            "args": [
+                "/EHsc",
+                "/Zi",
+                "/Foobj\\",
+                "/Fe:",
+                "${workspaceFolder}\\bin\\NswSseSnd.exe",
+                "${workspaceFolder}\\src\\main.c",
+                "${workspaceFolder}\\src\\containers.c",
+                "${workspaceFolder}\\src\\dsptool\\decode.c",
+                "${workspaceFolder}\\src\\dsptool\\encode.c",
+                "${workspaceFolder}\\src\\dsptool\\math.c",
+                "WSock32.Lib"
+            ],
+            "group":  {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal":"always"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

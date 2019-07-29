@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+     "configurations": [
+
+         {
+             "name": "(msvc) Launch",
+             "type": "cppvsdbg",
+             "request": "launch",
+             "program": "${workspaceFolder}\\bin\\NswSseSnd.exe",
+             "args": [
+                 "${workspaceFolder}/test/test.wav",
+                 "${workspaceFolder}/test/test.dsp"
+             ],
+             "stopAtEntry": true,
+             "cwd": "${workspaceFolder}",
+             "environment": [],
+             "externalConsole": false
+         }
+     ]
+ }
