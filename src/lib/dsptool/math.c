@@ -2,11 +2,11 @@
 
 uint32_t getBytesForAdpcmBuffer(uint32_t samples)
 {
-	uint32_t frames = samples / SAMPLES_PER_FRAME;
+	uint32_t bytes = (double) samples / SAMPLES_PER_FRAME * BYTES_PER_FRAME;
 	if (samples % SAMPLES_PER_FRAME)
-		frames++;
+		bytes++;
 
-	return frames * BYTES_PER_FRAME;
+	return bytes;
 }
 
 uint32_t getBytesForAdpcmInfo()
