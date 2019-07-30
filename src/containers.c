@@ -1,5 +1,5 @@
 #include "containers.h"
-#include "dsptool\dsptool.h"
+#include ".\lib\dsptool\dsptool.h"
 
 void fillAdpcmHeader(ADPCM_HEADER* header, ADPCM_INFO* cxt, uint32_t samples, uint32_t sampleRate) {
 

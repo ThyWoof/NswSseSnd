@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "msvc build",
+            "label": "NswSseSnd",
             "type": "shell",
             "command": "cl.exe",
             "args": [
@@ -11,12 +11,10 @@
                 "/Foobj\\",
                 "/Fe:",
                 "${workspaceFolder}\\bin\\NswSseSnd.exe",
-                "${workspaceFolder}\\src\\main.c",
+                "${workspaceFolder}\\src\\nswssesnd.cpp",
                 "${workspaceFolder}\\src\\containers.c",
-                "${workspaceFolder}\\src\\dsptool\\decode.c",
-                "${workspaceFolder}\\src\\dsptool\\encode.c",
-                "${workspaceFolder}\\src\\dsptool\\math.c",
-                "WSock32.Lib"
+                "${workspaceFolder}\\src\\lib\\dsptool\\encode.c",
+                "${workspaceFolder}\\src\\lib\\dsptool\\math.c"
             ],
             "group":  {
                 "kind": "build",
