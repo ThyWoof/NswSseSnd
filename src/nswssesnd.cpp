@@ -31,10 +31,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-inline bool isFileValid(string filename) {
+void validateFile(string filename) {
 
     struct stat buffer;
-    return stat (filename.c_str(), &buffer) == 0;
+    if (stat(filename.c_str(), &buffer)) {
+        cout << "ABORT: cannot open file." << endl;
+        ::exit(EXIT_FAILURE);
+    }
 }
 
 inline string getOutputFilename(string filename, string extension){
@@ -43,10 +46,13 @@ inline string getOutputFilename(string filename, string extension){
     return filename.substr(0,found + 1).append(extension);
 }
 
- inline bool validateFileExtension(string filename, const char* extension){
+ void validateFileExtension(string filename, const char* extension){
 
     size_t found = filename.find_last_of(".");
-    return stricmp(filename.substr(found + 1).c_str(), extension) == 0;
+    if (stricmp(filename.substr(found + 1).c_str(), extension)) {
+        cout << "ABORT: invalid file extension." << endl;
+        ::exit(EXIT_FAILURE);
+    }
 }
 
 uint32_t loadFileinMemory(string filename, char** buffer) {
@@ -72,7 +78,7 @@ void commandUnfuz(string filename)
     const uint8_t FUZ_VERSION[4] = {0x01, 0x00, 0x00, 0x00};
     const uint8_t LIP_SIGNATURE[4] = {0x01, 0x00, 0x00, 0x00};
     const uint8_t SOUND_SIGNATURE[4] = {'R', 'I', 'F', 'F'};
-    const uint32_t FUZ_HEADER_SIZE_PC = 0x0B;
+    const uint32_t FUZ_HEADER_SIZE_PC = 0x0C;
     const uint32_t FUZ_VERSION_POS = 0X04; // from file start
     const uint32_t FUZ_LIP_SIZE_POS = 0x08; // from file start
     const uint32_t FUZ_LIP_DATA_POS = 0x0C; // from file start
@@ -153,14 +159,17 @@ void commandConvertADPCM(string filename)
       	::exit(EXIT_FAILURE);
     }
 
+    // encode from PCM16 to DSP ADPCM
     uint32_t bufferSizeADPCM = getBytesForAdpcmBuffer((uint32_t)samples);
     uint8_t* outputBufferADPCM = (uint8_t*) malloc(bufferSizeADPCM);
     ADPCM_INFO adpcmInfo = {0};
     encode(inputBufferPCM, outputBufferADPCM, &adpcmInfo, samples);
 
+    // setup the header
     ADPCM_HEADER adpcmHeader = {0};
     fillAdpcmHeader(&adpcmHeader, &adpcmInfo, samples, sampleRate);
 
+    // save the MCADPCM file
     string mcadpcmFilename = getOutputFilename(filename, "ADPCM");
     ofstream mcadpcmFile(mcadpcmFilename, ios::binary);
     mcadpcmFile.write((const char*) &adpcmHeader, (streamsize) sizeof(ADPCM_HEADER));
@@ -173,6 +182,8 @@ void commandConvertADPCM(string filename)
 
 void commandConvertMCADPCM(string filename)
 {
+    const uint8_t MCADPCM_HEADER_MONO[8] = {0x01, 0x00, 0x00, 0x00, 0x0C,0x00, 0x00, 0x00}; // uint32_t channels uint32_t header_size
+    const uint8_t MCADPCM_HEADER_STEREO[8] = {0x02, 0x00, 0x00, 0x00, 0x14,0x00, 0x00, 0x00}; // uint32_t channels uint32_t header_size
     uint32_t channels;
     uint32_t sampleRate;
     uint64_t samples;
@@ -181,6 +192,11 @@ void commandConvertMCADPCM(string filename)
     inputBufferPCM = drwav_open_file_and_read_pcm_frames_s16(filename.c_str(), &channels, &sampleRate, &samples);
     if (inputBufferPCM == NULL) {
         cout << "ABORT: cannot parse the WAV file." << endl;
+      	::exit(EXIT_FAILURE);
+    }
+
+    if (channels > 1) {
+        cout << "ABORT: cannot support more than one channel... Yet." << endl;
       	::exit(EXIT_FAILURE);
     }
 
@@ -194,6 +210,8 @@ void commandConvertMCADPCM(string filename)
 
     string mcadpcmFilename = getOutputFilename(filename, "MCADPCM");
     ofstream mcadpcmFile(mcadpcmFilename, ios::binary);
+    mcadpcmFile.write((const char*) &MCADPCM_HEADER_MONO, (streamsize) sizeof(MCADPCM_HEADER_MONO));
+    mcadpcmFile.write((const char*) &bufferSizeADPCM, (streamsize) sizeof(uint32_t));
     mcadpcmFile.write((const char*) &adpcmHeader, (streamsize) sizeof(ADPCM_HEADER));
     mcadpcmFile.write((const char*) outputBufferADPCM, (streamsize) bufferSizeADPCM);
     mcadpcmFile.close();
@@ -241,34 +259,29 @@ int main(int argc, char** argv)
 
         if (result.count(CMD_FUZ)) {
             string filename = result[CMD_FUZ].as<string>();
-            if (isFileValid(filename) && validateFileExtension(filename, "WAV")) {
-                commandFuz(filename);
-                ::exit(EXIT_SUCCESS);
-            }
+            validateFile(filename);
+            validateFileExtension(filename, "WAV");
+            commandFuz(filename);
 
         } else if (result.count(CMD_UNFUZ)) {
             string filename = result[CMD_UNFUZ].as<string>();
-            if (isFileValid(filename) && validateFileExtension(filename, "FUZ")) {
-                commandUnfuz(filename);
-                ::exit(EXIT_SUCCESS);
-            }
+            validateFile(filename);
+            validateFileExtension(filename, "FUZ");
+            commandUnfuz(filename);
 
         } else if (result.count(CMD_ADPCM)) {
             string filename = result[CMD_ADPCM].as<string>();
-            if (isFileValid(filename) && validateFileExtension(filename, "WAV")) {
-                commandConvertADPCM(filename);
-                ::exit(EXIT_SUCCESS);
-            }
-        } else if (result.count(CMD_ADPCM)) {
-            string filename = result[CMD_ADPCM].as<string>();
-            if (isFileValid(filename) && validateFileExtension(filename, "WAV")) {
-                commandConvertMCADPCM(filename);
-                ::exit(EXIT_SUCCESS);
-            }
+            validateFile(filename);
+            validateFileExtension(filename, "WAV");
+            commandConvertADPCM(filename);
+
+        } else if (result.count(CMD_MCADPCM)) {
+            string filename = result[CMD_MCADPCM].as<string>();
+            validateFile(filename);
+            validateFileExtension(filename, "WAV");
+            commandConvertMCADPCM(filename);
         }
-
-        cout << "ABORT: some esoterical problem happened." << endl;
-      	::exit(EXIT_FAILURE);
+        ::exit(EXIT_SUCCESS);
     }
 	catch (const cxxopts::OptionException& e)
 	{
@@ -276,47 +289,3 @@ int main(int argc, char** argv)
 		::exit(EXIT_FAILURE);
   	}
 }
-
-
-
-
-    // uint32_t channels;
-    // uint32_t sampleRate;
-    // uint64_t samples;
-    // int16_t* inputBufferPCM;
-
-    // if(!stricmp(inputFileExt, ".fuz")) {
-    // // process a FUZ input file
-
-    //     FUZ_HEADER_NSW fuzHeader = {0};
-
-    //     char signature[5] = "FUZE";
-    //     fread(&signature, 1, 4, inputFileHandle);
-    //     if (memcmp(signature, "FUZE", 4)) {
-    //         fclose(inputFileHandle);
-    //         fprintf(stderr, "ABORT: cannot find a FUZ signature.\n");
-    //         ::exit(EXIT_FAILURE);
-    //     }
-
-    //     uint32_t version;
-    //     fread(&version, 1, 4, inputFileHandle);
-    //     if (version != 1) {
-    //         fclose(inputFileHandle);
-    //         fprintf(stderr, "ABORT: cannot support FUZ version %i.\n", version);
-    //         ::exit(EXIT_FAILURE);
-    //     }
-
-    //     uint32_t bufferSizeLip = 0;
-    //     fread(&bufferSizeLip, 1, 4, inputFileHandle);
-
-    //     uint16_t padding = bufferSizeLip % 4;
-    //     if(padding) {
-    //         padding = 4 - padding;
-    //     }
-    //     uint32_t soundOffset = 0x10 + bufferSizeLip + padding;
-
-    //     uint8_t* outputBufferLip = (uint8_t*) malloc(bufferSizeLip);
-    //     fread(outputBufferLip, sizeof(uint8_t), bufferSizeLip, inputFileHandle);
-
-
-
