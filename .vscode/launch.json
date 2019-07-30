@@ -8,8 +8,8 @@
              "request": "launch",
              "program": "${workspaceFolder}\\bin\\NswSseSnd.exe",
              "args": [
-                 "--unfuz",
-                 "${workspaceFolder}\\test\\test.fuz"
+                 "--adpcm",
+                 "${workspaceFolder}\\test\\a.wav"
              ],
              "stopAtEntry": true,
              "cwd": "${workspaceFolder}",
